@@ -3,7 +3,7 @@ title: "The Bread Basket Bakery"
 format: 
   dashboard:
     nav-buttons: [github]
-    github: https://github.com/evisti/data_mining_pluralsight
+    github: https://github.com/evisti/market-basket-analysis
 #logo: images/logo.png
 #theme: 
 #  light: [sandstone, themes/dashboard.scss]
@@ -19,34 +19,118 @@ import seaborn as sns
 
 ```{python}
 # load data
-items = pd.read_csv('datasets/BreadBasket_DMS.csv')
-
-# drop missing values
-items = items.drop(items[items.Item == 'NONE'].index)
+items = pd.read_csv('bakery_sales_dataset/bakery_sales_revised.csv')
 
 # create detailed date columns
-items['date_time'] = pd.to_datetime(items['Date'] + ' ' + items['Time'])
+items['date_time'] = items['date_time'].apply(pd.Timestamp)
 items['year_month'] = items['date_time'].map(lambda x: str(x.year) + '-' + str(x.month))
 items['hour'] = items['date_time'].dt.hour
 items['day_of_week'] = items['date_time'].dt.dayofweek
-items['day'] = items['date_time'].dt.day_name()
-items['weekend_weekday'] = items['date_time'].apply(lambda x: 'weekend' if x.dayofweek // 5 == 1 else 'weekday')
+items['day_name'] = items['date_time'].dt.day_name()
 items['week_number'] = items['date_time'].dt.isocalendar().week
 ```
 
 ```{python}
-# Total transactions by month
+# Calculated columns
 
-transaction_by_month = items[['year_month', 'Transaction']].groupby('year_month', as_index=False).count()
+# Totals by month
+items_sold_by_month = items[['year_month', 'Transaction']].groupby('year_month', as_index=False).count()
+transactions_by_month = items[['year_month', 'Transaction']].groupby('year_month', as_index=False).nunique()
 
-plt.figure(figsize=(8, 4))
 
-sns.barplot(x='year_month', y='Transaction', data=transaction_by_month, color='lightblue')
+items_sold_by_day = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).count()
+transactions_by_day = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).nunique()
 
-plt.ticklabel_format(style='plain', axis='y')
-plt.xlabel('')
+
+items_sold_weekday_weekend = items[['week_number', 'weekday_weekend', 'Transaction']].groupby(['week_number', 'weekday_weekend']).count()
+transactions_weekday_weekendy = items[['week_number', 'weekday_weekend', 'Transaction']].groupby(['week_number', 'weekday_weekend']).nunique()
+
+
+# Totals by hour
+items_sold_by_hour = items[['hour', 'Transaction']].groupby('hour').count()
+transactions_by_hour = items[['hour', 'Transaction']].groupby('hour').nunique()
+
+# item sets
+items_per_transaction = items[['Item', 'Transaction']].groupby('Transaction').agg(lambda x: list(x)).reset_index()
+
+
 ```
 
 ```{python}
+# Calculated values
+
+# Total items sold
+total_items_sold = len(items)
+
+# Total transactions
+total_transactions = len(items['Transaction'].unique())
+
+# mean number of items per transaction
+mean_items_per_transaction = items_per_transaction['Item'].apply(len).mean()
+```
+
+
+
+# Sales
+
+## Row
+
+```{python}
+#| content: valuebox
+#| title: "Items sold"
+dict(
+  icon = "cup-hot",
+  color = "light",
+  value = f"{total_items_sold:,.0f}"
+)
+```
+
+```{python}
+#| content: valuebox
+#| title: "Transactions"
+dict(
+  icon = "receipt-cutoff",
+  color = "light",
+  value = f"{total_transactions:,.0f}"
+)
+```
+
+```{python}
+#| content: valuebox
+#| title: "Items per transaction"
+dict(
+  icon = "basket2-fill",
+  color = "warning",
+  value = f"{mean_items_per_transaction:.2f}"
+)
+```
+
+
+## Row {height="60%"}
+
+
+```{python}
+
+plt.figure(figsize=(6, 4))
+
+sns.barplot(x='year_month', y='Transaction', data=items_sold_by_month, color='lightblue')
+
+plt.ticklabel_format(style='plain', axis='y')
+plt.xlabel('')
+plt.ylabel('')
+```
+
+```{python}
+items_sold_by_day
 
 ```
+
+```{python}
+transactions_by_day
+
+```
+
+
+
+
+# Data
