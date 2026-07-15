@@ -1,0 +1,52 @@
+---
+title: "The Bread Basket Bakery"
+format: 
+  dashboard:
+    nav-buttons: [github]
+    github: https://github.com/evisti/data_mining_pluralsight
+#logo: images/logo.png
+#theme: 
+#  light: [sandstone, themes/dashboard.scss]
+#  dark: [sandstone, themes/dashboard-dark.scss]
+---
+
+```{python}
+# import libraries
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+```
+
+```{python}
+# load data
+items = pd.read_csv('datasets/BreadBasket_DMS.csv')
+
+# drop missing values
+items = items.drop(items[items.Item == 'NONE'].index)
+
+# create detailed date columns
+items['date_time'] = pd.to_datetime(items['Date'] + ' ' + items['Time'])
+items['year_month'] = items['date_time'].map(lambda x: str(x.year) + '-' + str(x.month))
+items['hour'] = items['date_time'].dt.hour
+items['day_of_week'] = items['date_time'].dt.dayofweek
+items['day'] = items['date_time'].dt.day_name()
+items['weekend_weekday'] = items['date_time'].apply(lambda x: 'weekend' if x.dayofweek // 5 == 1 else 'weekday')
+items['week_number'] = items['date_time'].dt.isocalendar().week
+```
+
+```{python}
+# Total transactions by month
+
+transaction_by_month = items[['year_month', 'Transaction']].groupby('year_month', as_index=False).count()
+
+plt.figure(figsize=(8, 4))
+
+sns.barplot(x='year_month', y='Transaction', data=transaction_by_month, color='lightblue')
+
+plt.ticklabel_format(style='plain', axis='y')
+plt.xlabel('')
+```
+
+```{python}
+
+```
