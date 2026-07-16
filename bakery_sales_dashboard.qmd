@@ -5,9 +5,9 @@ format:
     nav-buttons: [github]
     github: https://github.com/evisti/market-basket-analysis
 #logo: images/logo.png
-#theme: 
-#  light: [sandstone, themes/dashboard.scss]
-#  dark: [sandstone, themes/dashboard-dark.scss]
+theme: 
+  light: [sandstone, themes/custom.scss]
+  dark: [sandstone, themes/custom-dark.scss]
 ---
 
 ```{python}
@@ -16,6 +16,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import itables
+import dayplot
+from plotly_calheatmap import calheatmap
 ```
 
 ```{python}
@@ -43,8 +45,12 @@ items_sold_by_month = items[['year_month', 'Transaction']].groupby('year_month',
 transactions_by_month = items[['year_month', 'Transaction']].groupby('year_month', as_index=False).nunique()
 
 # by day
-items_sold_by_day = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).count()
-transactions_by_day = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).nunique()
+items_sold_by_day = items[['date', 'Transaction']].groupby(['date']).count()
+transactions_by_day = items[['date', 'Transaction']].groupby(['date']).nunique()
+
+# by day of week
+items_sold_by_day_of_week = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).count()
+transactions_by_day_of_week = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).nunique()
 
 # weekday vs weekend
 items_sold_weekday_weekend = items[['week_number', 'weekday_weekend', 'Transaction']].groupby(['week_number', 'weekday_weekend']).count()
@@ -74,10 +80,9 @@ items_per_transaction = items_by_transaction['Item'].apply(len).mean()
 ```
 
 
+# Stats
 
-# Sales
-
-## Row
+## Row {height="20%"}
 
 ```{python}
 #| content: valuebox
@@ -109,31 +114,58 @@ dict(
 )
 ```
 
+ 
+## Row {height="40%"}
 
-## Row {height="60%"}
-
+### Column {width="60%"}
 
 ```{python}
+# by year
+fig = calheatmap(
+  data=items, 
+  x="date", 
+  y="Transaction", 
+  agg="count",
+  colorscale='purples',
+  navigation=True,
+  nav_options={
+    "x": -0.1, "xanchor": "right", 
+    "y": 1, "yanchor": "top",
+    "font": dict(size=14),
+    "direction": "down"
+  },
+  total_height=160,
+#  nan_color='#919191' # ser ikke ud til at virke
+)
+fig.show()
+```
 
-plt.figure(figsize=(6, 4))
+### Column {width="40%"}
 
+```{python}
+# by day of week
+plt.figure(figsize=(15, 6))
+
+sns.boxplot(x='day_name', y='Transaction', data=items_sold_by_day_of_week, color='lightblue', 
+            order=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+
+plt.tick_params()
+```
+
+
+## Row {height="40%"}
+
+```{python}
+fig, ax = plt.subplots(figsize=(15, 6))
+#transactions_by_day_of_week
 sns.barplot(x='year_month', y='Transaction', data=items_sold_by_month, color='lightblue')
-
-plt.ticklabel_format(style='plain', axis='y')
-plt.xlabel('')
-plt.ylabel('')
+plt.tight_layout()
+plt.show()
 ```
 
 ```{python}
-items_sold_by_day
-
+transactions_by_month
 ```
-
-```{python}
-transactions_by_day
-
-```
-
 
 
 
