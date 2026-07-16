@@ -15,6 +15,7 @@ format:
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import itables
 ```
 
 ```{python}
@@ -23,37 +24,40 @@ items = pd.read_csv('bakery_sales_dataset/bakery_sales_revised.csv')
 
 # create detailed date columns
 items['date_time'] = items['date_time'].apply(pd.Timestamp)
+items['date'] = items['date_time'].dt.date
+items['time'] = items['date_time'].dt.time
+items['year'] = items['date_time'].dt.year
+items['month'] = items['date_time'].dt.month
 items['year_month'] = items['date_time'].map(lambda x: str(x.year) + '-' + str(x.month))
-items['hour'] = items['date_time'].dt.hour
 items['day_of_week'] = items['date_time'].dt.dayofweek
 items['day_name'] = items['date_time'].dt.day_name()
+items['hour'] = items['date_time'].dt.hour
 items['week_number'] = items['date_time'].dt.isocalendar().week
 ```
 
 ```{python}
 # Calculated columns
 
-# Totals by month
+# totals by month
 items_sold_by_month = items[['year_month', 'Transaction']].groupby('year_month', as_index=False).count()
 transactions_by_month = items[['year_month', 'Transaction']].groupby('year_month', as_index=False).nunique()
 
-
+# by day
 items_sold_by_day = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).count()
 transactions_by_day = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).nunique()
 
-
+# weekday vs weekend
 items_sold_weekday_weekend = items[['week_number', 'weekday_weekend', 'Transaction']].groupby(['week_number', 'weekday_weekend']).count()
 transactions_weekday_weekendy = items[['week_number', 'weekday_weekend', 'Transaction']].groupby(['week_number', 'weekday_weekend']).nunique()
 
-
-# Totals by hour
+# totals by hour
 items_sold_by_hour = items[['hour', 'Transaction']].groupby('hour').count()
 transactions_by_hour = items[['hour', 'Transaction']].groupby('hour').nunique()
 
-# item sets
-items_per_transaction = items[['Item', 'Transaction']].groupby('Transaction').agg(lambda x: list(x)).reset_index()
-
-
+# group by transaction
+items_by_transaction = items[['Transaction', 'Item']].groupby('Transaction').agg(lambda x: list(x))
+other = items.drop(columns='Item').drop_duplicates().set_index('Transaction')
+items_by_transaction = items_by_transaction.join(other, on='Transaction').reset_index()
 ```
 
 ```{python}
@@ -66,7 +70,7 @@ total_items_sold = len(items)
 total_transactions = len(items['Transaction'].unique())
 
 # mean number of items per transaction
-mean_items_per_transaction = items_per_transaction['Item'].apply(len).mean()
+items_per_transaction = items_by_transaction['Item'].apply(len).mean()
 ```
 
 
@@ -101,7 +105,7 @@ dict(
 dict(
   icon = "basket2-fill",
   color = "warning",
-  value = f"{mean_items_per_transaction:.2f}"
+  value = f"{items_per_transaction:.2f}"
 )
 ```
 
@@ -134,3 +138,24 @@ transactions_by_day
 
 
 # Data
+
+## Row
+
+### Column {width="30%"}
+
+Disclaimer
+
+
+### Column {width="60%"}
+
+```{python}
+#| title: Data
+
+# selecting columns
+items_to_display = items_by_transaction[['date', 'day_name', 'period_day', 'time', 'Item']]
+
+# Displaying the DataFrame as an interactive table with pagination using itables
+itables.options.classes = ["display", "table", "table-bordered", "table-striped"]
+itables.show(items_to_display)
+```
+
