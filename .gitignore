@@ -12,3 +12,7 @@ wheels/
 
 # macOS generated file
 .DS_Store
+
+# Quarto files
+*.html
+*_files/
