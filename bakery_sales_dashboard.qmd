@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import itables
 import dayplot
+import plotly_express as px
+import plotly.graph_objects as go
 from plotly_calheatmap import calheatmap
 ```
 
@@ -49,16 +51,16 @@ items_sold_by_day = items[['date', 'Transaction']].groupby(['date']).count()
 transactions_by_day = items[['date', 'Transaction']].groupby(['date']).nunique()
 
 # by day of week
-items_sold_by_day_of_week = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).count()
-transactions_by_day_of_week = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).nunique()
+items_sold_by_day_of_week = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).count().reset_index()
+transactions_by_day_of_week = items[['week_number', 'day_name', 'Transaction']].groupby(['week_number', 'day_name']).nunique().reset_index()
 
 # weekday vs weekend
 items_sold_weekday_weekend = items[['week_number', 'weekday_weekend', 'Transaction']].groupby(['week_number', 'weekday_weekend']).count()
 transactions_weekday_weekendy = items[['week_number', 'weekday_weekend', 'Transaction']].groupby(['week_number', 'weekday_weekend']).nunique()
 
 # totals by hour
-items_sold_by_hour = items[['hour', 'Transaction']].groupby('hour').count()
-transactions_by_hour = items[['hour', 'Transaction']].groupby('hour').nunique()
+items_sold_by_hour = items[['day_name', 'hour', 'Transaction']].groupby(['day_name', 'hour']).count().reset_index()
+transactions_by_hour = items[['day_name', 'hour', 'Transaction']].groupby(['day_name', 'hour']).nunique().reset_index()
 
 # group by transaction
 items_by_transaction = items[['Transaction', 'Item']].groupby('Transaction').agg(lambda x: list(x))
@@ -82,7 +84,114 @@ items_per_transaction = items_by_transaction['Item'].apply(len).mean()
 
 # Stats
 
-## Row {height="20%"}
+```{python}
+#| output: false
+
+# Create plots
+
+# bar plot, by month
+bar_fig = px.bar(
+    transactions_by_month, 
+    x='year_month', 
+    y='Transaction'
+)
+bar_fig.update_layout(
+    xaxis_title=None,
+    yaxis_title='Transactions',
+    margin={'t':0, 'b': 0}
+)
+bar_fig.update_traces(marker_color='MediumPurple')
+
+
+# weekdays
+weekdays_wide = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+weekdays = {f'{d}': d[:3] for d in weekdays_wide}
+
+# box plot, by weekday
+box_fig = px.box(
+  transactions_by_day_of_week, 
+  x='day_name', 
+  y='Transaction',
+  category_orders={
+    'day_name': weekdays_wide
+  }
+)
+box_fig.update_xaxes(
+  labelalias=weekdays
+)
+box_fig.update_layout(
+    xaxis_title=None,
+    yaxis_title='Transactions',
+    margin={'t':0, 'b':0}
+)
+box_fig.update_traces(marker_color='MediumPurple')
+
+
+# calendar heatmap, by year
+cal_fig = calheatmap(
+  data=items, 
+  x="date", 
+  y="Transaction", 
+  agg="count",
+  colorscale='purples',
+  navigation=True, 
+  nav_options={
+    "x": -0.05, "xanchor": "right", 
+    "y": 1, "yanchor": "top",
+#    "font": dict(size=14),
+    "direction": "down"
+  },
+  total_height=160,
+#  nan_color='#919191' # ser ikke ud til at virke
+)
+cal_fig.update_layout(
+  margin={'t': 0}
+)
+
+
+# line plots, by hour
+
+#pivot = transactions_by_hour.pivot(index='hour', columns='day_name', values='Transaction')
+
+# Create a line chart using Plotly graph objects
+#line_fig = go.Figure()
+
+# Variable 1
+#line_fig.add_trace(go.Scatter(
+#    x=pivot['Monday'].index,  # x-axis
+#    y=pivot['Monday'].to_list(),  # y-axis
+#    mode='lines+markers',  # Connect data points with lines and add markers
+#    name='Mon',  # Name in the legend
+#    marker=dict(
+#        symbol='square',    # Change the marker symbol to a circle
+#        size=10,            # Set the marker size
+#        color='MediumPurple'),       # Set the marker color
+#    line=dict(
+#        color='MediumPurple',        # Change the line color to red
+#        width=4)             # Set the line width
+#))
+#line_fig.update_layout(
+#    showlegend=True,     # Display the legend
+#    plot_bgcolor='lightgrey',  # Set the plot background color
+#)
+
+line_fig = px.line(
+  transactions_by_hour,
+  x='hour', 
+  y='Transaction', 
+  color='day_name', 
+  markers=True
+)
+line_fig.update_layout(
+  xaxis_title=None,
+  yaxis_title='Transactions',
+  margin={'t':0, 'b':0}
+)
+
+```
+
+## Row {height="18%"}
+
 
 ```{python}
 #| content: valuebox
@@ -109,76 +218,56 @@ dict(
 #| title: "Items per transaction"
 dict(
   icon = "basket2-fill",
-  color = "warning",
+  color = "light",
   value = f"{items_per_transaction:.2f}"
 )
 ```
 
  
-## Row {height="40%"}
+## Row {height="41%"}
 
 ### Column {width="60%"}
 
 ```{python}
-# by year
-fig = calheatmap(
-  data=items, 
-  x="date", 
-  y="Transaction", 
-  agg="count",
-  colorscale='purples',
-  navigation=True,
-  nav_options={
-    "x": -0.1, "xanchor": "right", 
-    "y": 1, "yanchor": "top",
-    "font": dict(size=14),
-    "direction": "down"
-  },
-  total_height=160,
-#  nan_color='#919191' # ser ikke ud til at virke
-)
-fig.show()
+#| title: "By day"
+cal_fig.show()
 ```
 
 ### Column {width="40%"}
 
 ```{python}
-# by day of week
-plt.figure(figsize=(15, 6))
-
-sns.boxplot(x='day_name', y='Transaction', data=items_sold_by_day_of_week, color='lightblue', 
-            order=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
-
-plt.tick_params()
+#| title: "By hour"
+line_fig.show()
 ```
 
 
-## Row {height="40%"}
+## Row {height="41%"}
 
 ```{python}
-fig, ax = plt.subplots(figsize=(15, 6))
-#transactions_by_day_of_week
-sns.barplot(x='year_month', y='Transaction', data=items_sold_by_month, color='lightblue')
-plt.tight_layout()
-plt.show()
+#| title: "By month"
+bar_fig.show()
 ```
 
 ```{python}
-transactions_by_month
+#| title: "Weekday distributions"
+box_fig.show()
 ```
 
 
 
-# Data
+# Data Mining
+
+
+# Raw Data
 
 ## Row
 
-### Column {width="30%"}
+### Column {width="20%"}
 
-Disclaimer
+Info
 
 
-### Column {width="60%"}
+### Column {width="80%"}
 
 ```{python}
 #| title: Data
