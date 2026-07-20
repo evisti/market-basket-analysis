@@ -20,6 +20,7 @@ import dayplot
 import plotly_express as px
 import plotly.graph_objects as go
 from plotly_calheatmap import calheatmap
+from shiny.express import render, ui
 ```
 
 ```{python}
@@ -192,6 +193,28 @@ line_fig.update_layout(
 
 ## Row {height="18%"}
 
+
+::: {.card width=12%}
+```{python}
+ui.input_radio_buttons(
+  id='variable',
+  label='Variable',
+  choices=['Items sold', 'Transactions']
+)
+```
+:::
+
+::: {.card width=12%}
+```{python}
+
+ui.input_select(
+  id='year',
+  label='Year',
+  choices=['all', '2016', '2017']
+  # width='50%'
+)
+```
+:::
 
 ```{python}
 #| content: valuebox
