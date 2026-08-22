@@ -14,6 +14,7 @@ theme:
 # import libraries
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 import itables
 import dayplot
@@ -158,7 +159,7 @@ cal_fig.update_layout(
 
 ### Histogram ###
 
-select_day = 'Monday'
+select_day = 'Sunday'
 number_of_weeks = len(items['year_week'].unique())
 
 # transactions by day, week, and hour
@@ -199,6 +200,11 @@ hour_fig.update_layout(
   margin={'t':0, 'b':0},
   barcornerradius=4
 )
+hour_fig.update_xaxes(
+    ticktext=np.arange(1, 24),
+    tickvals=np.arange(1, 24) - 0.5,
+    range=[6, 22]
+)
 ```
 
 ```{python}
@@ -225,6 +231,9 @@ mean_transactions_by_day_hour = mean_transactions_by_day_hour\
 #mean_transactions_by_day_hour.reset_index()
 #mean_transactions_by_day_hour.index.get_level_values('hour').unique().sort_values()
 mean_transactions_by_day_hour[['Monday']].index
+
+mean_transactions_by_day_hour.index - 0.5
+
 ```
 
 ## Row {height="18%"}
