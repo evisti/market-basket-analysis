@@ -16,3 +16,6 @@ wheels/
 # Quarto files
 *.html
 *_files/
+
+# Other
+bakery_sales_dataset/
