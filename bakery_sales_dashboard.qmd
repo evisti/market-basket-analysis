@@ -38,6 +38,7 @@ items['day_of_week'] = items['date_time'].dt.dayofweek
 items['day_name'] = items['date_time'].dt.day_name()
 items['hour'] = items['date_time'].dt.hour
 items['week_number'] = items['date_time'].dt.isocalendar().week
+items['year_week'] = items['year'].astype(str) + '-' + items['week_number'].astype(str)
 ```
 
 ```{python}
@@ -82,13 +83,17 @@ total_transactions = len(items['Transaction'].unique())
 items_per_transaction = items_by_transaction['Item'].apply(len).mean()
 ```
 
+```{python}
+# Define colors and fonts
+color = 'MediumPurple'
+```
 
 # Stats
 
 ```{python}
 #| output: false
 
-# Create plots
+# Define plots
 
 # bar plot, by month
 bar_fig = px.bar(
@@ -99,9 +104,10 @@ bar_fig = px.bar(
 bar_fig.update_layout(
     xaxis_title=None,
     yaxis_title='Transactions',
-    margin={'t':0, 'b': 0}
+    margin={'t':0, 'b': 0},
+    barcornerradius=4
 )
-bar_fig.update_traces(marker_color='MediumPurple')
+bar_fig.update_traces(marker_color=color)
 
 
 # weekdays
@@ -125,7 +131,7 @@ box_fig.update_layout(
     yaxis_title='Transactions',
     margin={'t':0, 'b':0}
 )
-box_fig.update_traces(marker_color='MediumPurple')
+box_fig.update_traces(marker_color=color)
 
 
 # calendar heatmap, by year
@@ -143,52 +149,82 @@ cal_fig = calheatmap(
     "direction": "down"
   },
   total_height=160,
-#  nan_color='#919191' # ser ikke ud til at virke
+#  nan_color='#919191' # looks like it doesn't work
 )
 cal_fig.update_layout(
   margin={'t': 0}
 )
 
 
-# line plots, by hour
+### Histogram ###
 
-#pivot = transactions_by_hour.pivot(index='hour', columns='day_name', values='Transaction')
+select_day = 'Monday'
+number_of_weeks = len(items['year_week'].unique())
 
-# Create a line chart using Plotly graph objects
-#line_fig = go.Figure()
+# transactions by day, week, and hour
+transactions_by_day_week_hour = items[['day_name', 'hour', 'Transaction', 'year_week']]\
+  .groupby(['day_name', 'year_week', 'hour'])\
+  .nunique()\
+  .reset_index()
 
-# Variable 1
-#line_fig.add_trace(go.Scatter(
-#    x=pivot['Monday'].index,  # x-axis
-#    y=pivot['Monday'].to_list(),  # y-axis
-#    mode='lines+markers',  # Connect data points with lines and add markers
-#    name='Mon',  # Name in the legend
-#    marker=dict(
-#        symbol='square',    # Change the marker symbol to a circle
-#        size=10,            # Set the marker size
-#        color='MediumPurple'),       # Set the marker color
-#    line=dict(
-#        color='MediumPurple',        # Change the line color to red
-#        width=4)             # Set the line width
-#))
-#line_fig.update_layout(
-#    showlegend=True,     # Display the legend
-#    plot_bgcolor='lightgrey',  # Set the plot background color
-#)
+# aggregate and calculate mean values
+mean_transactions_by_day_hour = transactions_by_day_week_hour[['day_name', 'hour', 'Transaction']]\
+  .groupby(['day_name', 'hour'])\
+  .sum() / number_of_weeks
 
-line_fig = px.line(
-  transactions_by_hour,
-  x='hour', 
-  y='Transaction', 
-  color='day_name', 
-  markers=True
+# pivot table
+mean_transactions_by_day_hour = mean_transactions_by_day_hour\
+  .reset_index()\
+  .pivot(index="hour", columns="day_name", values="Transaction")\
+  .fillna(0)
+
+# select day
+df = mean_transactions_by_day_hour[[select_day]].reset_index()
+
+# define histogram
+hour_fig = px.histogram(
+  df.reset_index(), 
+  x='hour',
+  y=select_day,
+#  color='day_name',
 )
-line_fig.update_layout(
+hour_fig.update_traces(
+  xbins_size='H1',
+  marker_color=color
+)
+hour_fig.update_layout(
+  bargap=0.1,
   xaxis_title=None,
-  yaxis_title='Transactions',
-  margin={'t':0, 'b':0}
+  yaxis_title='Mean',
+  margin={'t':0, 'b':0},
+  barcornerradius=4
 )
+```
 
+```{python}
+#| output: false
+
+number_of_weeks = len(items['year_week'].unique())
+
+transactions_by_day_week_hour = items[['day_name', 'hour', 'Transaction', 'year_week']]\
+  .groupby(['day_name', 'year_week', 'hour'])\
+  .nunique()\
+  .reset_index()
+
+mean_transactions_by_day_hour = transactions_by_day_week_hour[['day_name', 'hour', 'Transaction']]\
+  .groupby(['day_name', 'hour'])\
+  .sum() / number_of_weeks
+
+mean_transactions_by_day_hour = mean_transactions_by_day_hour\
+  .reset_index()\
+  .pivot(index="hour", columns="day_name", values="Transaction")\
+  .fillna(0)
+
+# to choose an index: 
+#mean_transactions_by_day_hour.loc['Monday']
+#mean_transactions_by_day_hour.reset_index()
+#mean_transactions_by_day_hour.index.get_level_values('hour').unique().sort_values()
+mean_transactions_by_day_hour[['Monday']].index
 ```
 
 ## Row {height="18%"}
@@ -260,7 +296,7 @@ cal_fig.show()
 
 ```{python}
 #| title: "By hour"
-line_fig.show()
+hour_fig.show()
 ```
 
 
@@ -278,7 +314,7 @@ box_fig.show()
 
 
 
-# Data Mining
+# Association Rules
 
 
 # Raw Data
@@ -296,7 +332,7 @@ Info
 #| title: Data
 
 # selecting columns
-items_to_display = items_by_transaction[['date', 'day_name', 'period_day', 'time', 'Item']]
+items_to_display = items_by_transaction[['date', 'time', 'day_name', 'Item']]
 
 # Displaying the DataFrame as an interactive table with pagination using itables
 itables.options.classes = ["display", "table", "table-bordered", "table-striped"]
