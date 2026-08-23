@@ -20,6 +20,7 @@ import itables
 import dayplot
 import plotly_express as px
 import plotly.graph_objects as go
+import pypalettes
 from plotly_calheatmap import calheatmap
 from shiny.express import render, ui
 ```
@@ -86,7 +87,10 @@ items_per_transaction = items_by_transaction['Item'].apply(len).mean()
 
 ```{python}
 # Define colors and fonts
-color = 'MediumPurple'
+cmap = pypalettes.load_cmap('sPBIGn')
+colors = [c[:7] for c in cmap.colors]
+color = colors[4]
+
 ```
 
 # Stats
@@ -140,7 +144,7 @@ cal_fig = calheatmap(
   x="date", 
   y="Transaction", 
   agg="count",
-  colorscale='purples',
+  colorscale=colors,
   navigation=True, 
   nav_options={
     "x": -0.05, "xanchor": "right", 
@@ -188,48 +192,12 @@ first_day = 'Monday'
 hour_fig = px.histogram(
   df, 
   x='hour',
-  y=first_day
-)
-
-# define buttons for updatemenu
-buttons = []
-for day_name in weekdays_wide:
-  buttons.append(
-    dict(
-      label=day_name,
-      method='update',
-      args=[dict(
-        x=df['hour'],
-        y=df[day_name],
-      )]
-    )
-  )
-
-# updatemenu config
-menus = [
-  dict(
-    type='dropdown',
-    buttons=buttons,
-    x=0,
-    xanchor='left',
-    y=1,
-    yanchor='top'
-  )
-]
-
-# layout
-hour_fig.update_layout(
-  bargap=0.1,
-  xaxis_title=None,
-  yaxis_title=None,
-  margin={'t':0, 'b':0},
-  barcornerradius=4,
-  updatemenus=menus
+  y=first_day,
 )
 
 # traces
 hour_fig.update_traces(
-  xbins_size='H1',
+  xbins_size=1,
   marker_color=color
 )
 
@@ -242,13 +210,51 @@ hour_fig.update_xaxes(
 
 # y-axis
 hour_fig.update_yaxes(
-    range=[0, 13]
+    range=[0, 14]
+)
+
+# define buttons for updatemenu
+buttons = []
+for day_name in weekdays_wide:
+  buttons.append(
+    dict(
+      label=day_name[:3],
+      method='update',
+      args=[{
+        'x': [df['hour']],
+        'y': [df[day_name]]
+      }]
+    )
+  )
+
+# updatemenu config
+menus = [
+  dict(
+    type='dropdown',
+    buttons=buttons,
+    x=0.02,
+    xanchor='left',
+    y=0.98,
+    yanchor='top',
+  )
+]
+
+# layout
+hour_fig.update_layout(
+  bargap=0.1,
+  xaxis_title=None,
+  yaxis_title=None,
+  margin={'t':0, 'b':0},
+  barcornerradius=4,
+  updatemenus=menus,
 )
 ```
 
 ```{python}
 #| output: false
-df
+
+#print(df['Saturday'])
+
 ```
 
 ## Row {height="18%"}
@@ -312,26 +318,26 @@ dict(
 ### Column {width="60%"}
 
 ```{python}
-#| title: "By day"
+#| title: "Daily Transactions"
 cal_fig.show()
 ```
 
 ### Column {width="40%"}
 
 ```{python}
-#| title: "Busy and quiet hours"
+#| title: "Hour by Hour"
 hour_fig.show()
 ```
 
 ## Row {height="41%"}
 
 ```{python}
-#| title: "By month"
+#| title: "Transactions by Month"
 bar_fig.show()
 ```
 
 ```{python}
-#| title: "Weekday distributions"
+#| title: "Weekday Distributions"
 box_fig.show()
 ```
 
