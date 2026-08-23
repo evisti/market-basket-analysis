@@ -14,6 +14,7 @@ dependencies = [
     "plotly>=6.9.0",
     "plotly-calheatmap>=0.5",
     "plotly-express>=0.4.1",
+    "pypalettes>=0.2.1",
     "seaborn>=0.13.2",
     "shiny>=1.6.3",
     "shinywidgets>=0.8.1",
