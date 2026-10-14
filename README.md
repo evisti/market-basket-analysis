@@ -1,6 +1,6 @@
 # Market Basket Analysis
 
-Market basket analysis on [Bakery Sales Dataset](www.kaggle.com/datasets/akashdeepkuila/bakery) from Kaggle
+Market basket analysis on [Bakery Sales Dataset](https://www.kaggle.com/datasets/akashdeepkuila/bakery) from Kaggle
 
 Quarto dashboard
 
